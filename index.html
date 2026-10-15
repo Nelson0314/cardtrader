@@ -1,0 +1,2729 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="球員卡交易管理系統 - 進貨、出貨、庫存、雜支與損益統計">
+    <title>球員卡交易管理系統</title>
+    <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ========== CSS Variables ========== */
+:root {
+  --bg-primary: #f5f7fb;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-glass: rgba(0, 0, 0, 0.02);
+  --bg-glass-hover: rgba(0, 0, 0, 0.05);
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --border-glass-hover: rgba(0, 0, 0, 0.15);
+
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+
+  --accent-blue: #3b82f6;
+  --accent-blue-glow: rgba(59, 130, 246, 0.2);
+  --accent-purple: #8b5cf6;
+  --accent-purple-glow: rgba(139, 92, 246, 0.2);
+  --accent-green: #059669;
+  --accent-green-glow: rgba(5, 150, 105, 0.2);
+  --accent-orange: #d97706;
+  --accent-orange-glow: rgba(217, 119, 6, 0.2);
+  --accent-red: #dc2626;
+  --accent-red-glow: rgba(220, 38, 38, 0.2);
+  --accent-cyan: #0891b2;
+
+  --gradient-main: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  --gradient-green: linear-gradient(135deg, #059669, #0891b2);
+  --gradient-orange: linear-gradient(135deg, #d97706, #dc2626);
+  --gradient-card: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.6));
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-glow-blue: 0 2px 12px rgba(59, 130, 246, 0.15);
+  --shadow-glow-purple: 0 2px 12px rgba(139, 92, 246, 0.15);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --sidebar-width: 200px;
+}
+
+/* ========== Reset & Base ========== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 15px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Subtle background pattern */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(5, 150, 105, 0.02) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ========== Layout ========== */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== Sidebar ========== */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 100;
+  transition: transform var(--transition-slow);
+}
+
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-logo .logo-icon {
+  width: 42px;
+  height: 42px;
+  background: var(--gradient-main);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  box-shadow: var(--shadow-glow-blue);
+}
+
+.sidebar-logo h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  background: var(--gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-logo p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.sidebar-nav {
+  padding: 16px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+}
+
+.nav-item:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+  border-color: var(--border-glass);
+}
+
+.nav-item.active {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--accent-blue);
+  border-color: rgba(59, 130, 246, 0.2);
+  font-weight: 600;
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--accent-blue);
+  border-radius: 0 4px 4px 0;
+}
+
+.nav-item .nav-icon {
+  width: 22px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-glass);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ========== Main Content ========== */
+.main-content {
+  margin-left: var(--sidebar-width);
+  flex: 1;
+  padding: 32px 40px;
+  min-height: 100vh;
+}
+
+.page {
+  display: none;
+  animation: fadeSlideUp 0.4s ease;
+}
+
+.page.active {
+  display: block;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========== Page Header ========== */
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-header h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.page-header p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* ========== Stats Row ========== */
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 0;
+  background: var(--gradient-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 16px 14px;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.stat-card.blue::before {
+  background: var(--gradient-main);
+}
+
+.stat-card.green::before {
+  background: var(--gradient-green);
+}
+
+.stat-card.orange::before {
+  background: var(--gradient-orange);
+}
+
+.stat-card.purple::before {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+}
+
+.stat-card:hover {
+  border-color: var(--border-glass-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-card .stat-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+
+.stat-card .stat-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.stat-card .stat-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ========== Product Grid ========== */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.product-card {
+  background: var(--gradient-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.product-card:hover {
+  border-color: var(--border-glass-hover);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.product-card .card-image {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  border-bottom: 1px solid var(--border-glass);
+  background: var(--bg-secondary);
+}
+
+.product-card .card-body {
+  padding: 16px;
+}
+
+.product-card .card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+
+.product-card .card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.product-card .meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.product-card .meta-label {
+  color: var(--text-muted);
+}
+
+.product-card .meta-value {
+  font-weight: 600;
+}
+
+.meta-value.stock-ok {
+  color: var(--accent-green);
+}
+
+.meta-value.stock-low {
+  color: var(--accent-orange);
+}
+
+.meta-value.stock-out {
+  color: var(--accent-red);
+}
+
+.product-card .card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ========== Buttons ========== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-glass-hover);
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: var(--gradient-main);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--shadow-glow-blue);
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+}
+
+.btn-green {
+  background: var(--accent-green);
+  border-color: transparent;
+  color: #fff;
+}
+
+.btn-green:hover {
+  opacity: 0.9;
+}
+
+.btn-orange {
+  background: var(--accent-orange);
+  border-color: transparent;
+  color: #000;
+}
+
+.btn-orange:hover {
+  opacity: 0.9;
+}
+
+.btn-red {
+  background: var(--accent-red);
+  border-color: transparent;
+  color: #fff;
+}
+
+.btn-red:hover {
+  opacity: 0.9;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.76rem;
+  flex: 1;
+}
+
+.btn-lg {
+  padding: 12px 28px;
+  font-size: 0.95rem;
+}
+
+/* ========== Modal ========== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  width: 90%;
+  max-width: 480px;
+  transform: scale(0.95) translateY(10px);
+  transition: transform var(--transition-slow);
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-overlay.show .modal {
+  transform: scale(1) translateY(0);
+}
+
+.modal h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.modal .modal-subtitle {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+/* ========== Form ========== */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.form-group input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-group .hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.form-group .cost-preview {
+  font-size: 0.82rem;
+  color: var(--accent-green);
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+/* ========== Image Upload ========== */
+.image-upload-area {
+  border: 2px dashed var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background: var(--bg-glass);
+  position: relative;
+}
+
+.image-upload-area:hover,
+.image-upload-area.drag-over {
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.image-upload-area .upload-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.image-upload-area .upload-text {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.image-upload-area .upload-hint {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-top: 6px;
+}
+
+.image-upload-area input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.image-preview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  margin-top: 12px;
+  display: none;
+}
+
+.image-preview.show {
+  display: block;
+}
+
+/* ========== Add Product Form Container ========== */
+.add-product-form {
+  max-width: 640px;
+  background: var(--gradient-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  padding: 36px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ========== History Page ========== */
+.history-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.history-controls input[type="date"] {
+  padding: 8px 14px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.history-controls input[type="date"]:focus {
+  border-color: var(--accent-blue);
+}
+
+.history-controls .separator {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.chart-container {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.chart-container .chart-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  max-height: 320px;
+}
+
+.history-table-container {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.history-table-container .section-title {
+  padding: 20px 24px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table th,
+.history-table td {
+  padding: 12px 24px;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.history-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bg-glass);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.history-table td {
+  border-bottom: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+}
+
+.history-table tr:hover td {
+  background: var(--bg-glass);
+}
+
+.type-badge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.type-badge.purchase {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+}
+
+.type-badge.sale {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-green);
+}
+
+.type-badge.expense {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--accent-red);
+}
+
+/* ========== Empty State ========== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state .empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 0.85rem;
+}
+
+/* ========== Scrollbar ========== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ========== Toast / Notification ========== */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  background: #ffffff;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s;
+  min-width: 280px;
+}
+
+.toast.success {
+  border-left: 3px solid var(--accent-green);
+}
+
+.toast.error {
+  border-left: 3px solid var(--accent-red);
+}
+
+.toast.info {
+  border-left: 3px solid var(--accent-blue);
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+
+/* ========== Mobile Responsive ========== */
+.mobile-header {
+  display: none;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-glass);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-header .hamburger {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay.show {
+    display: block;
+  }
+
+  .mobile-header {
+    display: flex;
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 20px 16px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .history-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ========== Utility ========== */
+.text-green {
+  color: var(--accent-green) !important;
+}
+
+.text-red {
+  color: var(--accent-red) !important;
+}
+
+.text-blue {
+  color: var(--accent-blue) !important;
+}
+
+.text-orange {
+  color: var(--accent-orange) !important;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.mb-24 {
+  margin-bottom: 24px;
+}
+/* ========== v2 additions ========== */
+/* flex 子項預設 min-width:auto，寬表格會把整個主區域撐開；限制在視窗內並讓表格自行捲動 */
+.main-content {
+  min-width: 0;
+}
+
+.history-table-container {
+  overflow-x: auto;
+}
+
+.stats-row {
+  flex-wrap: wrap;
+}
+
+.stats-row .stat-card {
+  flex: 1 1 150px;
+}
+
+@media (max-width: 768px) {
+  /* 原規則只設 grid-template-columns，但 .stats-row 是 flex，不會生效 */
+  .stats-row {
+    display: grid;
+  }
+}
+
+.fatal-banner {
+  display: none;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: var(--accent-red);
+  font-weight: 600;
+}
+
+.chart-container svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.chart-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+}
+
+.data-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.data-action {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.data-action h3 {
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.data-action p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+.data-action input[type="file"] {
+  display: none;
+}
+
+.settings-table input {
+  width: 100%;
+  min-width: 80px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+.settings-table input[type="radio"] {
+  width: auto;
+  min-width: 0;
+}
+
+.settings-note {
+  margin: 14px 24px 20px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger" id="hamburgerBtn">☰</button>
+        <span style="font-weight:700;font-size:1rem;">球員卡管理</span>
+        <div style="width:32px"></div>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="logo-icon">🃏</div>
+                    <div>
+                        <h1>CardTrader</h1>
+                        <p>球員卡交易管理</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-item active" data-page="inventory" id="nav-inventory">
+                    <span class="nav-icon">📦</span>
+                    <span>商品管理</span>
+                </div>
+                <div class="nav-item" data-page="add-product" id="nav-add-product">
+                    <span class="nav-icon">➕</span>
+                    <span>新增商品</span>
+                </div>
+
+                <div class="nav-item" data-page="history" id="nav-history">
+                    <span class="nav-icon">📊</span>
+                    <span>歷史數據</span>
+                </div>
+                <div class="nav-item" data-page="menu" id="nav-menu">
+                    <span class="nav-icon">🛒</span>
+                    <span>購買菜單</span>
+                </div>
+                <div class="nav-item" data-page="settings" id="nav-settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>設定</span>
+                </div>
+                <div class="nav-item" data-page="data" id="nav-data">
+                    <span class="nav-icon">💾</span>
+                    <span>資料管理</span>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+
+                <div style="font-size:0.7rem;color:var(--text-muted);">CardTrader v2.0 &copy; 2026</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="fatal-banner" id="fatalBanner" role="alert"></div>
+
+            <!-- ==================== PAGE: Inventory ==================== -->
+            <div class="page active" id="page-inventory">
+                <div class="page-header"
+                    style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <h2>📦 商品管理</h2>
+                        <p>查看庫存、進貨、出貨</p>
+                    </div>
+                    <button class="btn btn-primary" id="openExpenseBtn">🧾 記錄雜支</button>
+                </div>
+
+                <div class="stats-row" id="inventoryStats">
+                    <!-- Filled by JS -->
+                </div>
+
+                <div class="product-grid" id="productGrid">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- ==================== PAGE: Add Product ==================== -->
+            <div class="page" id="page-add-product">
+                <div class="page-header">
+                    <h2>➕ 新增商品</h2>
+                    <p>新增一個全新的球員卡商品</p>
+                </div>
+
+                <div class="add-product-form">
+                    <div class="form-group">
+                        <label>商品名稱</label>
+                        <input type="text" id="newProductName" placeholder="例：2024 Topps Chrome Hobby Box">
+                    </div>
+
+                    <div class="form-group">
+                        <label>商品圖片</label>
+                        <div class="image-upload-area" id="imageUploadArea">
+                            <div class="upload-icon">📷</div>
+                            <div class="upload-text">點擊或拖曳圖片至此處</div>
+                            <div class="upload-hint">支援 JPG、PNG、WebP，建議 800x600 以上</div>
+                            <input type="file" id="imageFileInput" accept="image/*">
+                        </div>
+                        <img class="image-preview" id="imagePreview" alt="預覽">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>進貨總金額</label>
+                            <input type="number" id="newProductCost" placeholder="0" min="0" step="1">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>付款方式</label>
+                            <select id="newProductPayment"></select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>初始進貨數量</label>
+                            <input type="number" id="newProductQty" placeholder="1" min="1" step="1" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label>進貨日期</label>
+                            <input type="date" id="newProductDate">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-lg" id="addProductBtn" style="width:100%;margin-top:8px;">
+                        🚀 新增商品
+                    </button>
+                </div>
+            </div>
+
+
+            <!-- ==================== PAGE: History ==================== -->
+            <div class="page" id="page-history">
+                <div class="page-header">
+                    <h2>📊 歷史數據</h2>
+                    <p>查看不同時間區段的交易與損益數據</p>
+                </div>
+
+                <div class="history-controls">
+                    <input type="date" id="historyStartDate">
+                    <span class="separator">至</span>
+                    <input type="date" id="historyEndDate">
+                    <button class="btn btn-primary" id="historyFilterBtn">🔍 查詢</button>
+                    <button class="btn" id="historyResetBtn">重置</button>
+                </div>
+                <div id="productFilterBanner" style="display:none;align-items:center;justify-content:center;gap:8px;padding:10px 16px;margin-bottom:12px;background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.2);border-radius:var(--radius-md);color:var(--accent-orange);font-size:0.88rem;font-weight:600;"></div>
+                <div id="historyRangeLabel" style="text-align:center;color:var(--text-secondary);margin-bottom:16px;font-size:0.9rem;font-weight:500;"></div>
+
+                <div class="stats-row" id="historyStats">
+                    <!-- Filled by JS -->
+                </div>
+
+
+                <div class="chart-container" id="monthlyChart"></div>
+
+                <div class="history-table-container">
+                    <div class="section-title">📋 交易明細</div>
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>商品/說明</th>
+                                <th>類型</th>
+                                <th>付款方式</th>
+                                <th>數量</th>
+                                <th>原始金額</th>
+                                <th>手續費</th>
+                                <th>回饋</th>
+                                <th>成本/收入</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ==================== Page 5 - Purchase Menu ==================== -->
+            <div class="page" id="page-menu">
+                <div class="page-header">
+                    <h2>🛒 購買菜單</h2>
+                    <p>輸出商品售價與庫存一覽表，供消費者參考</p>
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <button class="btn btn-primary btn-lg" id="exportMenuBtn">📤 輸出購買菜單圖片</button>
+                </div>
+
+                <div id="menuPreview"
+                    style="background:#fff;border-radius:16px;padding:32px;border:1px solid var(--border-glass);overflow-x:auto;">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- ==================== PAGE: Settings ==================== -->
+            <div class="page" id="page-settings">
+                <div class="page-header">
+                    <h2>⚙️ 設定</h2>
+                    <p>付款方式與費率。進貨時選擇付款方式，手續費與回饋在統計時另列計算。</p>
+                </div>
+
+                <div class="history-table-container">
+                    <div class="section-title">💳 付款方式</div>
+                    <table class="history-table settings-table">
+                        <thead>
+                            <tr>
+                                <th>預設</th>
+                                <th>名稱</th>
+                                <th>手續費 (%)</th>
+                                <th>回饋 (%)</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="methodRows"></tbody>
+                    </table>
+                    <div style="display:flex;gap:12px;padding:16px 24px 0;flex-wrap:wrap;">
+                        <button class="btn" id="addMethodBtn">➕ 新增付款方式</button>
+                        <button class="btn btn-primary" id="saveSettingsBtn">💾 儲存設定</button>
+                    </div>
+                    <p class="settings-note">修改費率只影響之後新增的進貨；既有紀錄保留當時的付款方式與費率。
+                        淨成本 = 金額 ×（1 + 手續費率 − 回饋率），無條件進位；回饋 = 金額 × 回饋率，無條件捨去。</p>
+                </div>
+            </div>
+
+            <!-- ==================== PAGE: Data Management ==================== -->
+            <div class="page" id="page-data">
+                <div class="page-header">
+                    <h2>💾 資料管理</h2>
+                    <p id="dataModeNote"></p>
+                </div>
+
+                <div class="stats-row" id="dataSummary"></div>
+
+                <div class="data-actions">
+                    <div class="data-action">
+                        <h3>📤 匯出 JSON 備份</h3>
+                        <p>下載目前所有商品、圖片與交易紀錄，可用於備份或搬移到其他裝置。</p>
+                        <button class="btn btn-primary" id="exportJsonBtn">下載備份檔</button>
+                    </div>
+                    <div class="data-action">
+                        <h3>📥 匯入 JSON</h3>
+                        <p>以備份檔取代目前資料（匯入前會顯示雙方筆數並要求確認）。</p>
+                        <label class="btn" for="importJsonInput">選擇檔案…</label>
+                        <input type="file" id="importJsonInput" accept="application/json,.json">
+                    </div>
+                    <div class="data-action" id="resetSnapshotCard">
+                        <h3>↩️ 重設為初始資料</h3>
+                        <p>捨棄這台裝置上的變更，重新載入網站提供的資料。</p>
+                        <button class="btn btn-red" id="resetSnapshotBtn">重設</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ==================== Modal: Purchase / Restock / Sale ==================== -->
+    <div class="modal-overlay" id="transactionModal">
+        <div class="modal">
+            <h3 id="modalTitle">進貨</h3>
+            <p class="modal-subtitle" id="modalSubtitle">商品名稱</p>
+
+            <div class="form-group">
+                <label>數量</label>
+                <input type="number" id="modalQty" placeholder="1" min="1" value="1">
+            </div>
+
+            <div class="form-group" id="modalPriceGroup">
+                <label id="modalPriceLabel">單價 (原始金額)</label>
+                <input type="number" id="modalPrice" placeholder="0" min="0">
+            </div>
+
+            <div class="form-group" id="modalPayGroup">
+                <label>付款方式</label>
+                <select id="modalPayment"></select>
+            </div>
+
+            <div class="form-group">
+                <label>交易日期</label>
+                <input type="date" id="modalDate">
+            </div>
+
+            <input type="hidden" id="modalProductId">
+            <input type="hidden" id="modalType">
+
+            <div class="modal-actions">
+                <button class="btn" id="modalCancelBtn">取消</button>
+                <button class="btn btn-primary" id="modalConfirmBtn">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Modal: Expense ==================== -->
+    <div class="modal-overlay" id="expenseModal">
+        <div class="modal">
+            <h3>🧾 記錄雜支</h3>
+            <p class="modal-subtitle">運費、折扣、包裝費、關稅等</p>
+
+            <div class="form-group">
+                <label>說明</label>
+                <input type="text" id="expenseDesc" placeholder="例：國際運費、包裝材料費">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>分類</label>
+                    <select id="expenseCategory">
+                        <option value="運費">🚚 運費</option>
+                        <option value="折扣">🏷️ 折扣</option>
+                        <option value="包裝費">📦 包裝費</option>
+                        <option value="關稅">🏛️ 關稅</option>
+                        <option value="平台費">💻 平台費</option>
+                        <option value="其他">📝 其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>金額</label>
+                    <input type="number" id="expenseAmount" placeholder="0" min="0">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>日期</label>
+                <input type="date" id="expenseDate">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn" id="expenseCancelBtn">取消</button>
+                <button class="btn btn-primary" id="expenseConfirmBtn">確認記錄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Modal: Edit Product ==================== -->
+    <div class="modal-overlay" id="editProductModal">
+        <div class="modal">
+            <h3>✏️ 編輯商品</h3>
+            <p class="modal-subtitle" id="editProductSubtitle">商品名稱</p>
+
+            <div class="form-group">
+                <label>商品名稱</label>
+                <input type="text" id="editProductName">
+            </div>
+
+            <div class="form-group">
+                <label>商品圖片</label>
+                <div class="image-upload-area" id="editImageUploadArea" style="padding:20px 16px;">
+                    <div class="upload-icon" style="font-size:1.5rem;margin-bottom:6px;">📷</div>
+                    <div class="upload-text" style="font-size:0.8rem;">點擊或拖曳更換圖片</div>
+                    <input type="file" id="editImageFileInput" accept="image/*">
+                </div>
+                <img class="image-preview" id="editImagePreview" alt="預覽">
+            </div>
+
+            <div class="form-group">
+                <label>庫存數量</label>
+                <input type="number" id="editProductStock" placeholder="0" min="0">
+            </div>
+
+            <input type="hidden" id="editProductId">
+
+            <div class="modal-actions">
+                <button class="btn btn-red btn-sm" id="editProductDeleteBtn">🗑️ 刪除商品</button>
+                <div style="flex:1;"></div>
+                <button class="btn" id="editProductCancelBtn">取消</button>
+                <button class="btn btn-primary" id="editProductSaveBtn">💾 儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script>
+// ============================================================
+//  CardTrader - 球員卡交易管理系統
+//  Data layer + UI logic (Single Page App)
+// ============================================================
+
+(async () => {
+  'use strict';
+
+  let products = [];
+  let transactions = [];
+  let settings = null;
+  let filterProductId = null; // Used to filter history by a specific product
+
+  // ──────── Helpers ────────
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+  const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  // 以本地時區產生 YYYY-MM-DD（toISOString 為 UTC，台灣早上 8 點前會變成前一天）
+  const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  // ──────── Payment Methods / Fee & Rebate ────────
+  // 進貨只記錄原始金額與當下付款方式的費率（百分比，1.5 = 1.5%）；手續費與回饋在統計時計算。
+  //   淨成本 = 原始金額 × (1 + 手續費率 − 回饋率)，無條件進位（與 v1 的 ×0.99 規則一致）
+  //   回饋   = 原始金額 × 回饋率，無條件捨去
+  //   手續費 = 淨成本 − 原始金額 + 回饋
+  // 費率換成萬分位整數運算，避免 1 + 0.015 − 0.025 之類的浮點誤差。
+  const DEFAULT_SETTINGS = {
+    paymentMethods: [
+      { id: 'cash', name: '現金', feeRate: 0, rebateRate: 0 },
+      { id: 'card', name: '信用卡', feeRate: 1.5, rebateRate: 2.5 }
+    ],
+    defaultPaymentMethod: 'card'
+  };
+  const cloneDefaults = () => JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  const bp = (pct) => Math.round((pct || 0) * 100);
+
+  function txMoney(t) {
+    const amount = t.totalCost;
+    if (t.type !== 'purchase') {
+      const v = t.actualCost ?? amount;
+      return { amount, fee: 0, rebate: 0, cost: v, net: v };
+    }
+    const f = bp(t.feeRate), r = bp(t.rebateRate);
+    // actualCost 只會出現在無法以費率重現的舊資料上，此時以舊值為準，確保金額不變
+    const net = t.actualCost ?? Math.ceil(amount * (10000 + f - r) / 10000 - 1e-9);
+    const rebate = Math.floor(amount * r / 10000 + 1e-9);
+    const fee = net - amount + rebate;
+    return { amount, fee, rebate, cost: amount + fee, net };
+  }
+
+  // v1 → v2 資料轉換；回傳是否有變動。可重複執行。
+  //   - v1 進貨在記錄時就以 ×0.99 扣掉回饋，視為信用卡（手續費 1.5%、回饋 2.5%）
+  //   - 能以費率精確重現的 actualCost 欄位刪除，其餘保留
+  //   - restock 類型已無介面可建立，併入 purchase
+  function migrate() {
+    let changed = false;
+    if (!settings || !Array.isArray(settings.paymentMethods) || settings.paymentMethods.length === 0) {
+      settings = cloneDefaults();
+      changed = true;
+    }
+    const legacy = DEFAULT_SETTINGS.paymentMethods.find(m => m.id === 'card');
+    transactions.forEach(t => {
+      if (t.type === 'restock') { t.type = 'purchase'; changed = true; }
+      if (t.type === 'purchase' && t.feeRate === undefined) {
+        t.paymentMethod = legacy.name;
+        t.feeRate = legacy.feeRate;
+        t.rebateRate = legacy.rebateRate;
+        changed = true;
+      }
+      if (t.actualCost !== undefined) {
+        const stored = t.actualCost;
+        delete t.actualCost;
+        if (txMoney(t).net !== stored) t.actualCost = stored;
+        else changed = true;
+      }
+    });
+    return changed;
+  }
+
+  function getPaymentMethod(id) {
+    return settings.paymentMethods.find(m => m.id === id) || settings.paymentMethods[0];
+  }
+
+  function fillPaymentSelect(sel) {
+    sel.innerHTML = settings.paymentMethods.map(m =>
+      `<option value="${esc(m.id)}">${esc(m.name)}（手續費 ${m.feeRate}%、回饋 ${m.rebateRate}%）</option>`).join('');
+    sel.value = getPaymentMethod(settings.defaultPaymentMethod).id;
+  }
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // ──────── Storage ────────
+  // 兩種模式共用同一份程式：
+  //   server 模式：由 server.py 在 localhost 提供，讀寫 data.json（真實帳本）。
+  //   browser 模式：GitHub Pages 等靜態網址，資料存在瀏覽器 IndexedDB，
+  //                 首次開啟時以網站上的 data.json 快照作為初始資料。
+  const SERVER_MODE = ['localhost', '127.0.0.1'].includes(location.hostname) && location.port === '3000';
+  let dataVersion = null;   // server 模式：目前資料的 lastUpdated，用來偵測覆寫衝突
+  let canSave = true;       // 載入失敗或發生衝突時停止寫入，避免以不完整的資料覆蓋 data.json
+  let saveChain = Promise.resolve();
+  let pendingSaves = 0;
+
+  function showFatal(message) {
+    canSave = false;
+    const bar = $('#fatalBanner');
+    bar.textContent = message;
+    bar.style.display = 'block';
+  }
+
+  // IndexedDB (browser 模式)
+  const DB_NAME = 'CardTraderDB';
+  const DB_STORE = 'backup';
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains(DB_STORE)) req.result.createObjectStore(DB_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function idbRequest(mode, fn) {
+    return openDB().then(db => new Promise((resolve, reject) => {
+      const tx = db.transaction(DB_STORE, mode);
+      const result = fn(tx.objectStore(DB_STORE));
+      tx.oncomplete = () => resolve(result);
+      tx.onerror = () => reject(tx.error);
+    }));
+  }
+
+  async function loadSnapshot() {
+    // 網站上的 data.json 快照；不存在時回傳空資料
+    const res = await fetch('data.json', { cache: 'no-store' });
+    if (!res.ok) return { products: [], transactions: [] };
+    return res.json();
+  }
+
+  async function loadData() {
+    if (SERVER_MODE) {
+      const res = await fetch('/api/data', { cache: 'no-store' });
+      if (!res.ok) throw new Error('伺服器回應 ' + res.status);
+      const data = await res.json();
+      dataVersion = data.lastUpdated || null;
+      return data;
+    }
+    const stored = await idbRequest('readonly', store => ({
+      p: store.get('products'), t: store.get('transactions'), s: store.get('settings')
+    }));
+    if (stored.p.result) {
+      return { products: stored.p.result, transactions: stored.t.result || [], settings: stored.s.result };
+    }
+    return { ...(await loadSnapshot()), fromSnapshot: true };
+  }
+
+  async function writeData() {
+    if (SERVER_MODE) {
+      const lastUpdated = new Date().toISOString();
+      const res = await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Base-Version': dataVersion || '' },
+        body: JSON.stringify({ version: '2.0', lastUpdated, settings, products, transactions })
+      });
+      if (res.status === 409) {
+        showFatal('⚠️ 資料已在其他分頁被修改，這個分頁的變更沒有儲存。請重新整理頁面後再操作。');
+        throw new Error('conflict');
+      }
+      if (!res.ok) throw new Error('伺服器回應 ' + res.status);
+      dataVersion = lastUpdated;
+      return;
+    }
+    await idbRequest('readwrite', store => {
+      store.put(products, 'products');
+      store.put(transactions, 'transactions');
+      store.put(settings, 'settings');
+    });
+  }
+
+  // 依序寫入，避免兩次儲存同時送出造成順序錯亂
+  // 每個會修改資料的操作開頭先檢查，無法儲存時不修改記憶體中的資料
+  function ensureWritable() {
+    if (!canSave) showToast('目前無法儲存，請先處理頁面上方的錯誤訊息', 'error');
+    return canSave;
+  }
+
+  function persistAll() {
+    pendingSaves++;
+    saveChain = saveChain.then(writeData).catch(e => {
+      console.error('Save failed:', e);
+      if (e.message !== 'conflict') {
+        showFatal('⚠️ 儲存失敗（' + e.message + '）。最後一筆變更尚未寫入，請保持此頁面開啟並重新啟動球員卡系統後重試。');
+      }
+    }).finally(() => { pendingSaves--; });
+    return saveChain;
+  }
+
+  window.addEventListener('beforeunload', (e) => {
+    if (pendingSaves > 0) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  // ──────── Data Initialization ────────
+  try {
+    const data = await loadData();
+    products = data.products || [];
+    transactions = data.transactions || [];
+    settings = data.settings || null;
+    if (migrate() || data.fromSnapshot) await persistAll();
+  } catch (err) {
+    settings = settings || cloneDefaults();
+    console.error('Load failed:', err);
+    showFatal(SERVER_MODE
+      ? '⚠️ 無法從本機伺服器讀取資料（' + err.message + '）。為保護既有資料，此頁面暫停所有寫入，請重新啟動球員卡系統。'
+      : '⚠️ 無法讀取瀏覽器儲存空間（' + err.message + '），變更將不會被保存。');
+  }
+
+  // ──────── Heartbeat (Auto-Shutdown) ────────
+  // 伺服器在一段時間沒收到 ping 後自動關閉。背景分頁的計時器會被瀏覽器節流到約每分鐘一次，
+  // 所以伺服器端的逾時設為 3 分鐘；切回分頁時立即 ping，若伺服器已關閉則停止寫入並提示。
+  if (SERVER_MODE) {
+    const ping = () => fetch('/api/ping', { method: 'POST' })
+      .then(r => { if (!r.ok) throw new Error(r.status); })
+      .catch(() => showFatal('⚠️ 本機伺服器已關閉，之後的變更無法儲存。請重新開啟球員卡系統。'));
+    ping();
+    setInterval(ping, 20000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) ping(); });
+  }
+
+  // ──────── Image Compression ────────
+  // Resize to max 400px and compress to JPEG to keep Base64 small
+  function compressImage(dataUrl, maxSize = 400, quality = 0.7) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > h && w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
+        else if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => resolve(dataUrl); // fallback to original
+      img.src = dataUrl;
+    });
+  }
+
+  // ──────── Toast Notification ────────
+  function showToast(message, type = 'success') {
+    const container = $('#toastContainer');
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<span>${icons[type] || ''}</span><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  // ──────── Format helpers ────────
+  function formatCurrency(n) {
+    return new Intl.NumberFormat('zh-TW').format(n);
+  }
+  function formatDate(d) {
+    const dt = new Date(d);
+    return `${dt.getFullYear()}/${String(dt.getMonth() + 1).padStart(2, '0')}/${String(dt.getDate()).padStart(2, '0')}`;
+  }
+
+  // ══════════════════════════════════════
+  //  NAVIGATION
+  // ══════════════════════════════════════
+  const navItems = $$('.nav-item');
+  const pages = $$('.page');
+
+  function switchPage(pageId) {
+    navItems.forEach(n => n.classList.toggle('active', n.dataset.page === pageId));
+    pages.forEach(p => p.classList.toggle('active', p.id === `page-${pageId}`));
+    // Close mobile sidebar
+    $('#sidebar').classList.remove('open');
+    $('#sidebarOverlay').classList.remove('show');
+    // Refresh page data
+    if (pageId === 'inventory') renderInventory();
+    if (pageId === 'history') renderHistory();
+    if (pageId === 'menu') renderMenu();
+    if (pageId === 'data') renderDataPage();
+    if (pageId === 'settings') renderSettings();
+    if (pageId === 'add-product') fillPaymentSelect($('#newProductPayment'));
+    history.replaceState(null, '', '#' + pageId);
+  }
+
+  navItems.forEach(nav => {
+    nav.addEventListener('click', () => switchPage(nav.dataset.page));
+  });
+
+  // Mobile sidebar
+  $('#hamburgerBtn').addEventListener('click', () => {
+    $('#sidebar').classList.toggle('open');
+    $('#sidebarOverlay').classList.toggle('show');
+  });
+  $('#sidebarOverlay').addEventListener('click', () => {
+    $('#sidebar').classList.remove('open');
+    $('#sidebarOverlay').classList.remove('show');
+  });
+
+  // ══════════════════════════════════════
+  //  PAGE 1 - INVENTORY
+  // ══════════════════════════════════════
+  function renderInventory() {
+    // Stats
+    const totalProducts = products.length;
+    const totalStock = products.reduce((s, p) => s + p.stock, 0);
+    const sum = (type, key) => transactions
+      .filter(t => t.type === type)
+      .reduce((s, t) => s + txMoney(t)[key], 0);
+    const totalCostInvested = sum('purchase', 'cost');
+    const totalRebate = sum('purchase', 'rebate');
+    const totalSalesRevenue = sum('sale', 'amount');
+    const totalExpenses = sum('expense', 'amount');
+
+    $('#inventoryStats').innerHTML = `
+      <div class="stat-card blue">
+        <div class="stat-label">商品種類</div>
+        <div class="stat-value">${totalProducts}</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">總庫存量</div>
+        <div class="stat-value">${formatCurrency(totalStock)}</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-label">總進貨成本（含手續費）</div>
+        <div class="stat-value">$${formatCurrency(totalCostInvested)}</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">總回饋</div>
+        <div class="stat-value text-green">$${formatCurrency(totalRebate)}</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-label">總銷售收入</div>
+        <div class="stat-value">$${formatCurrency(totalSalesRevenue)}</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--accent-red);">
+        <div class="stat-label">總雜支</div>
+        <div class="stat-value text-red">$${formatCurrency(totalExpenses)}</div>
+      </div>
+    `;
+
+    // Product grid
+    const grid = $('#productGrid');
+    if (products.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="empty-icon">📭</div>
+          <h3>尚無商品</h3>
+          <p>點擊左側「新增商品」來加入第一個商品</p>
+        </div>`;
+      return;
+    }
+
+    const sortedProducts = [...products].sort((a, b) => {
+      if (a.stock === 0 && b.stock > 0) return 1;
+      if (b.stock === 0 && a.stock > 0) return -1;
+      return 0;
+    });
+
+    grid.innerHTML = sortedProducts.map(p => {
+      // Determine stock class
+      let stockClass = 'stock-ok';
+      if (p.stock === 0) stockClass = 'stock-out';
+      else if (p.stock <= 3) stockClass = 'stock-low';
+
+      // Calculate avg cost for this product
+      // 平均成本以扣除回饋後的淨成本計算
+      const productTxns = transactions.filter(t => t.productId === p.id && t.type === 'purchase');
+      const totalQty = productTxns.reduce((s, t) => s + t.quantity, 0);
+      const totalCost = productTxns.reduce((s, t) => s + txMoney(t).net, 0);
+      const avgCost = totalQty > 0 ? Math.round(totalCost / totalQty) : 0;
+      
+      // Calculate avg sold price & ROI
+      const salesTxns = transactions.filter(t => t.productId === p.id && t.type === 'sale');
+      const totalSoldQty = salesTxns.reduce((s, t) => s + t.quantity, 0);
+      const totalSalesRev = salesTxns.reduce((s, t) => s + t.totalCost, 0);
+      
+      let avgSoldPriceText = '—';
+      let roiText = '—';
+
+      if (totalSoldQty > 0) {
+        const avgSoldPrice = Math.round(totalSalesRev / totalSoldQty);
+        avgSoldPriceText = '$' + formatCurrency(avgSoldPrice);
+        
+        if (avgCost > 0) {
+          const roi = ((avgSoldPrice - avgCost) / avgCost) * 100;
+          const roiColor = roi > 0 ? 'var(--text-green)' : (roi < 0 ? 'var(--text-red)' : 'var(--text-secondary)');
+          roiText = `<span style="color:${roiColor};font-weight:700;">${roi.toFixed(1)}%</span>`;
+        }
+      }
+
+      return `
+        <div class="product-card">
+          <img class="card-image" src="${p.imageDataUrl || ''}" alt="${esc(p.name)}"
+               onerror="this.style.display='flex';this.style.alignItems='center';this.style.justifyContent='center';this.outerHTML='<div class=\\'card-image\\' style=\\'display:flex;align-items:center;justify-content:center;font-size:3rem;\\'>🃏</div>';">
+          <div class="card-body">
+            <div class="card-title">${esc(p.name)}</div>
+            
+            <div class="card-meta">
+              <div class="meta-item">
+                <span class="meta-label">庫存</span>
+                <span class="meta-value ${stockClass}">${p.stock} 件</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">已售出</span>
+                <span class="meta-value">${totalSoldQty} 件</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label" title="扣除回饋後的淨成本">平均成本</span>
+                <span class="meta-value">$${formatCurrency(avgCost)}</span>
+              </div>
+            </div>
+
+            <div class="card-meta" style="margin-top:8px; border-top:1px dashed var(--border-glass); padding-top:8px;">
+              <div class="meta-item" style="flex:1;">
+                <span class="meta-label">均售出價</span>
+                <span class="meta-value">${avgSoldPriceText}</span>
+              </div>
+              <div class="meta-item" style="flex:1;">
+                <span class="meta-label">平均報酬率</span>
+                <span class="meta-value">${roiText}</span>
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-sm" onclick="App.openEditModal('${p.id}')" title="編輯">✏️</button>
+              <button class="btn btn-sm btn-primary" onclick="App.openModal('${p.id}','purchase')">進貨</button>
+              <button class="btn btn-sm btn-green" onclick="App.openModal('${p.id}','sale')">出貨</button>
+              <button class="btn btn-sm btn-orange" onclick="App.viewProductHistory('${p.id}')" title="查看明細">📋</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ══════════════════════════════════════
+  //  MODAL - Transaction
+  // ══════════════════════════════════════
+  const modal = $('#transactionModal');
+
+  function openModal(productId, type) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    const titles = { purchase: '📥 進貨', sale: '📤 出貨' };
+    const priceLabels = { purchase: '進貨總金額', sale: '售出單價' };
+
+    $('#modalTitle').textContent = titles[type];
+    $('#modalSubtitle').textContent = product.name;
+    $('#modalProductId').value = productId;
+    $('#modalType').value = type;
+    $('#modalQty').value = 1;
+    $('#modalPrice').value = '';
+    $('#modalPriceLabel').textContent = priceLabels[type];
+    $('#modalDate').value = todayStr();
+    $('#modalPayGroup').style.display = type === 'purchase' ? '' : 'none';
+    fillPaymentSelect($('#modalPayment'));
+
+    modal.classList.add('show');
+  }
+
+  function closeModal() {
+    modal.classList.remove('show');
+  }
+
+  $('#modalCancelBtn').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  $('#modalConfirmBtn').addEventListener('click', () => {
+    if (!ensureWritable()) return;
+    const productId = $('#modalProductId').value;
+    const type = $('#modalType').value;
+    const qty = parseInt($('#modalQty').value) || 0;
+    const unitPrice = parseFloat($('#modalPrice').value) || 0;
+
+    if (qty <= 0) return showToast('數量必須大於 0', 'error');
+    if (unitPrice <= 0) return showToast('金額必須大於 0', 'error');
+
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    if (type === 'sale' && qty > product.stock) {
+      return showToast(`庫存不足！目前僅有 ${product.stock} 件`, 'error');
+    }
+
+    // Use selected date or fallback to now
+    const selectedDate = $('#modalDate').value ? new Date($('#modalDate').value + 'T12:00:00') : new Date();
+
+    const tx = {
+      id: genId(),
+      productId,
+      productName: product.name,
+      type,
+      quantity: qty,
+      unitPrice,
+      // 出貨：unitPrice 為單價；進貨：輸入的就是總金額
+      totalCost: type === 'sale' ? unitPrice * qty : unitPrice,
+      date: selectedDate.toISOString()
+    };
+    if (type === 'sale') {
+      product.stock -= qty;
+    } else {
+      product.stock += qty;
+      Object.assign(tx, paymentFields($('#modalPayment').value));
+    }
+    transactions.push(tx);
+
+    persistAll();
+    closeModal();
+
+    const typeLabels = { purchase: '進貨', sale: '出貨' };
+    showToast(`${typeLabels[type]}成功！${esc(product.name)} × ${qty}`, 'success');
+    renderInventory();
+  });
+
+  // ══════════════════════════════════════
+  //  PAGE 2 - ADD PRODUCT
+  // ══════════════════════════════════════
+  let pendingImageDataUrl = '';
+
+  // Image upload
+  const uploadArea = $('#imageUploadArea');
+  const fileInput = $('#imageFileInput');
+  const imgPreview = $('#imagePreview');
+
+  // 讀取圖片檔並壓縮，完成後呼叫 onDone(dataUrl)
+  function readImageFile(file, onDone) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => onDone(await compressImage(e.target.result));
+    reader.readAsDataURL(file);
+  }
+
+  function handleImageFile(file) {
+    readImageFile(file, (dataUrl) => {
+      pendingImageDataUrl = dataUrl;
+      imgPreview.src = dataUrl;
+      imgPreview.classList.add('show');
+    });
+  }
+
+  fileInput.addEventListener('change', (e) => handleImageFile(e.target.files[0]));
+
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('drag-over');
+  });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('drag-over');
+    handleImageFile(e.dataTransfer.files[0]);
+  });
+
+  // 進貨紀錄保存付款方式名稱與當下費率，之後修改設定不會影響既有紀錄
+  function paymentFields(methodId) {
+    const m = getPaymentMethod(methodId);
+    return { paymentMethod: m.name, feeRate: m.feeRate, rebateRate: m.rebateRate };
+  }
+
+  // Add product
+  $('#addProductBtn').addEventListener('click', () => {
+    if (!ensureWritable()) return;
+    const name = $('#newProductName').value.trim();
+    const cost = parseFloat($('#newProductCost').value) || 0;
+    const qty = parseInt($('#newProductQty').value) || 1;
+
+    if (!name) return showToast('請輸入商品名稱', 'error');
+    if (cost <= 0) return showToast('請輸入進貨價格', 'error');
+
+    // Use selected date or fallback to now
+    const selectedDate = $('#newProductDate').value ? new Date($('#newProductDate').value + 'T12:00:00') : new Date();
+
+    const product = {
+      id: genId(),
+      name,
+      imageDataUrl: pendingImageDataUrl,
+      costPerUnit: cost,
+      stock: qty,
+      createdAt: new Date().toISOString()
+    };
+
+    products.push(product);
+
+    // Record initial purchase transaction
+    transactions.push({
+      id: genId(),
+      productId: product.id,
+      productName: name,
+      type: 'purchase',
+      quantity: qty,
+      unitPrice: cost,
+      totalCost: cost,
+      date: selectedDate.toISOString(),
+      ...paymentFields($('#newProductPayment').value)
+    });
+
+    persistAll();
+    showToast(`商品「${esc(name)}」新增成功！`, 'success');
+
+    // Reset form
+    $('#newProductName').value = '';
+    $('#newProductCost').value = '';
+    $('#newProductQty').value = '1';
+    pendingImageDataUrl = '';
+    imgPreview.classList.remove('show');
+    imgPreview.src = '';
+    fileInput.value = '';
+    $('#newProductDate').value = todayStr();
+
+    // Auto-navigate to inventory page
+    switchPage('inventory');
+  });
+
+
+  // ══════════════════════════════════════
+  //  PAGE 4 - HISTORY
+  // ══════════════════════════════════════
+
+  function viewProductHistory(productId) {
+    filterProductId = productId;
+    // Clear date filters so all history for this product shows
+    $('#historyStartDate').value = '';
+    $('#historyEndDate').value = '';
+    switchPage('history');
+  }
+
+  function renderHistory() {
+    const startInput = $('#historyStartDate').value;
+    const endInput = $('#historyEndDate').value;
+
+    let filtered = [...transactions];
+
+    // Filter by product if set
+    if (filterProductId) {
+      filtered = filtered.filter(t => t.productId === filterProductId);
+    }
+
+    if (startInput) {
+      const start = new Date(startInput);
+      start.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(t => new Date(t.date) >= start);
+    }
+    if (endInput) {
+      const end = new Date(endInput);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(t => new Date(t.date) <= end);
+    }
+
+    // Update range label
+    let rangeText = '目前顯示：歷史紀錄';
+    if (filterProductId) {
+      const pName = products.find(p => p.id === filterProductId)?.name || '未知商品';
+      rangeText = `🔎 篩選商品：${pName}`;
+      if (startInput || endInput) rangeText += '　';
+    }
+    if (startInput && endInput) {
+      rangeText += `${filterProductId ? '' : '目前顯示特定區間：'}${startInput} 至 ${endInput}`;
+    } else if (startInput) {
+      rangeText += `${filterProductId ? '' : '目前顯示特定區間：'}${startInput} 起`;
+    } else if (endInput) {
+      rangeText += `${filterProductId ? '' : '目前顯示特定區間：'}至 ${endInput} 止`;
+    }
+
+    // Show product filter banner
+    let bannerEl = $('#productFilterBanner');
+    if (filterProductId) {
+      const pName = products.find(p => p.id === filterProductId)?.name || '未知商品';
+      bannerEl.innerHTML = `<span>🔎 目前篩選：<strong>${esc(pName)}</strong></span><button class="btn btn-sm" onclick="App.clearProductFilter()" style="margin-left:12px;">✕ 清除篩選</button>`;
+      bannerEl.style.display = 'flex';
+    } else {
+      bannerEl.innerHTML = '';
+      bannerEl.style.display = 'none';
+    }
+
+    $('#historyRangeLabel').textContent = rangeText;
+
+    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Stats
+    const sum = (type, key) => filtered
+      .filter(t => t.type === type)
+      .reduce((s, t) => s + txMoney(t)[key], 0);
+    const totalPurchaseCost = sum('purchase', 'cost');
+    const totalFees = sum('purchase', 'fee');
+    const totalRebate = sum('purchase', 'rebate');
+    const totalSalesRevenue = sum('sale', 'amount');
+    const totalExpenses = sum('expense', 'cost');
+    const grossProfit = totalSalesRevenue + totalRebate - totalPurchaseCost - totalExpenses;
+    const profitMargin = totalSalesRevenue > 0 ? ((grossProfit / totalSalesRevenue) * 100).toFixed(1) : '0.0';
+
+    renderMonthlyChart(filtered);
+
+    $('#historyStats').innerHTML = `
+      <div class="stat-card orange">
+        <div class="stat-label">進貨成本（含手續費）</div>
+        <div class="stat-value">$${formatCurrency(totalPurchaseCost)}</div>
+        <div class="stat-sub">其中手續費 $${formatCurrency(totalFees)}</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">付款回饋</div>
+        <div class="stat-value text-green">$${formatCurrency(totalRebate)}</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">銷售收入</div>
+        <div class="stat-value">$${formatCurrency(totalSalesRevenue)}</div>
+      </div>
+      <div class="stat-card" style="border-top:3px solid var(--accent-red);">
+        <div class="stat-label">雜支總額</div>
+        <div class="stat-value text-red">$${formatCurrency(totalExpenses)}</div>
+      </div>
+      <div class="stat-card ${grossProfit >= 0 ? 'blue' : 'purple'}">
+        <div class="stat-label">淨利</div>
+        <div class="stat-value ${grossProfit >= 0 ? 'text-green' : 'text-red'}">$${formatCurrency(grossProfit)}</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-label">淨利率</div>
+        <div class="stat-value">${profitMargin}%</div>
+      </div>
+    `;
+
+    // Table
+    if (filtered.length === 0) {
+      $('#historyTableBody').innerHTML = `
+        <tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted);">
+          此時間範圍內無交易紀錄
+        </td></tr>`;
+      return;
+    }
+
+    const typeLabels = { purchase: '進貨', sale: '出貨', expense: '雜支' };
+
+    $('#historyTableBody').innerHTML = filtered.map(t => {
+      const nameDisplay = t.type === 'expense'
+        ? `${t.expenseCategory || ''} ${t.productName || ''}`.trim()
+        : (t.productName || '—');
+      const colorClass = t.type === 'sale' ? 'text-green' : (t.type === 'expense' ? 'text-red' : 'text-orange');
+      const m = txMoney(t);
+      const isPurchase = t.type === 'purchase';
+      return `
+      <tr>
+        <td>${formatDate(t.date)}</td>
+        <td style="font-weight:600;color:var(--text-primary);">${esc(nameDisplay)}</td>
+        <td><span class="type-badge ${t.type}">${typeLabels[t.type]}</span></td>
+        <td>${t.type === 'expense' ? '—' : t.quantity}</td>
+        <td>${isPurchase ? esc(t.paymentMethod) : '—'}</td>
+        <td>$${formatCurrency(m.amount)}</td>
+        <td>${isPurchase ? '$' + formatCurrency(m.fee) : '—'}</td>
+        <td class="text-green">${isPurchase ? '$' + formatCurrency(m.rebate) : '—'}</td>
+        <td style="font-weight:600;" class="${colorClass}">
+          $${formatCurrency(m.cost)}
+        </td>
+        <td><button class="btn btn-sm" style="padding:3px 8px;font-size:0.7rem;" onclick="App.deleteTransaction('${t.id}')">🗑</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+
+  // History controls
+  $('#historyFilterBtn').addEventListener('click', renderHistory);
+  $('#historyResetBtn').addEventListener('click', () => {
+    $('#historyStartDate').value = '';
+    $('#historyEndDate').value = '';
+    filterProductId = null;
+    renderHistory();
+  });
+
+  function clearProductFilter() {
+    filterProductId = null;
+    renderHistory();
+  }
+
+  // ══════════════════════════════════════
+  //  PAGE 5 - PURCHASE MENU
+  // ══════════════════════════════════════
+  function renderMenu() {
+    const inStock = products.filter(p => p.stock > 0);
+
+    if (inStock.length === 0) {
+      $('#menuPreview').innerHTML = `
+        <div style="text-align:center;padding:40px;color:#94a3b8;">
+          <div style="font-size:2.5rem;margin-bottom:12px;">📭</div>
+          <h3 style="color:#64748b;">目前無可購買的商品</h3>
+          <p>請先新增商品並確保有庫存</p>
+        </div>`;
+      return;
+    }
+
+    const dateStr = formatDate(new Date());
+    $('#menuPreview').innerHTML = `
+      <div style="text-align:center;margin-bottom:24px;">
+        <h2 style="font-size:1.6rem;font-weight:800;color:#1e293b;margin-bottom:4px;">🃏 球員卡商品目錄</h2>
+        <p style="color:#94a3b8;font-size:0.85rem;">更新日期：${dateStr}</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+        ${inStock.map(p => `
+          <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff;">
+            ${p.imageDataUrl
+        ? `<img src="${p.imageDataUrl}" style="width:100%;height:240px;object-fit:contain;border-bottom:1px solid #e2e8f0;background:#f8fafc;">`
+        : `<div style="width:100%;height:240px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">🃏</div>`
+      }
+            <div style="padding:12px;">
+              <div style="font-weight:700;font-size:0.95rem;color:#1e293b;margin-bottom:6px;">${esc(p.name)}</div>
+              <div style="display:flex;justify-content:flex-end;align-items:center;">
+                <span style="font-size:0.75rem;color:${p.stock <= 3 ? '#dc2626' : '#059669'};font-weight:600;">
+                  剩餘 ${p.stock} 件
+                </span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="text-align:center;margin-top:20px;color:#cbd5e1;font-size:0.75rem;">
+        CardTrader © ${new Date().getFullYear()}
+      </div>
+    `;
+  }
+
+  // Export menu as image
+  $('#exportMenuBtn').addEventListener('click', async () => {
+    renderMenu(); // ensure latest data
+    const el = $('#menuPreview');
+    try {
+      const canvas = await html2canvas(el, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true
+      });
+      const link = document.createElement('a');
+      link.download = `購買菜單_${todayStr()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('購買菜單圖片已輸出！', 'success');
+    } catch (e) {
+      console.error('Export failed:', e);
+      showToast('輸出失敗，請稍後再試', 'error');
+    }
+  });
+
+  // ══════════════════════════════════════
+  //  INIT
+  // ══════════════════════════════════════
+  // Set default date range: empty to show all history
+  $('#historyEndDate').value = '';
+  $('#historyStartDate').value = '';
+  $('#newProductDate').value = todayStr();
+
+  // ══════════════════════════════════════
+  //  EXPENSE MODAL
+  // ══════════════════════════════════════
+  const expenseModal = $('#expenseModal');
+
+  $('#openExpenseBtn').addEventListener('click', () => {
+    $('#expenseDesc').value = '';
+    $('#expenseAmount').value = '';
+    $('#expenseDate').value = todayStr();
+    $('#expenseCategory').selectedIndex = 0;
+    expenseModal.classList.add('show');
+  });
+
+  function closeExpenseModal() {
+    expenseModal.classList.remove('show');
+  }
+
+  $('#expenseCancelBtn').addEventListener('click', closeExpenseModal);
+  expenseModal.addEventListener('click', (e) => { if (e.target === expenseModal) closeExpenseModal(); });
+
+  $('#expenseConfirmBtn').addEventListener('click', () => {
+    if (!ensureWritable()) return;
+    const desc = $('#expenseDesc').value.trim();
+    const category = $('#expenseCategory').value;
+    const amount = parseFloat($('#expenseAmount').value) || 0;
+
+    if (!desc) return showToast('請輸入雜支說明', 'error');
+    if (amount <= 0) return showToast('金額必須大於 0', 'error');
+
+    const selectedDate = $('#expenseDate').value ? new Date($('#expenseDate').value + 'T12:00:00') : new Date();
+
+    transactions.push({
+      id: genId(),
+      productId: null,
+      productName: desc,
+      expenseCategory: category,
+      type: 'expense',
+      quantity: 0,
+      unitPrice: amount,
+      totalCost: amount,
+      date: selectedDate.toISOString()
+    });
+
+    persistAll();
+    closeExpenseModal();
+    showToast(`雜支「${category} - ${esc(desc)}」已記錄！`, 'success');
+    renderInventory();
+  });
+  // Delete single transaction
+  function deleteTransaction(txId) {
+    const tx = transactions.find(t => t.id === txId);
+    if (!tx || !ensureWritable()) return;
+    if (!confirm('確定要刪除此筆紀錄嗎？')) return;
+
+    // Reverse stock effect
+    if (tx.productId) {
+      const product = products.find(p => p.id === tx.productId);
+      if (product) {
+        if (tx.type === 'purchase') product.stock -= tx.quantity;
+        else if (tx.type === 'sale') product.stock += tx.quantity;
+      }
+    }
+
+    transactions = transactions.filter(t => t.id !== txId);
+    persistAll();
+    showToast('紀錄已刪除', 'info');
+    renderHistory();
+    renderInventory();
+  }
+
+  // Expose globally for onclick handlers
+  window.App = { openModal, openEditModal, deleteTransaction, viewProductHistory, clearProductFilter };
+
+  // ══════════════════════════════════════
+  //  EDIT PRODUCT MODAL
+  // ══════════════════════════════════════
+  const editModal = $('#editProductModal');
+  let editPendingImage = null; // null = no change, string = new dataUrl
+
+  function openEditModal(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    $('#editProductId').value = productId;
+    $('#editProductName').value = product.name;
+    $('#editProductStock').value = product.stock;
+    $('#editProductSubtitle').textContent = product.name;
+
+    // Show current image
+    editPendingImage = null;
+    const preview = $('#editImagePreview');
+    if (product.imageDataUrl) {
+      preview.src = product.imageDataUrl;
+      preview.classList.add('show');
+    } else {
+      preview.src = '';
+      preview.classList.remove('show');
+    }
+
+    $('#editImageFileInput').value = '';
+    editModal.classList.add('show');
+  }
+
+  function closeEditModal() {
+    editModal.classList.remove('show');
+  }
+
+  // Edit image upload
+  const editUploadArea = $('#editImageUploadArea');
+  const editFileInput = $('#editImageFileInput');
+
+  // Explicit click handler — the CSS overlay approach doesn't work reliably in modals
+  editUploadArea.addEventListener('click', (e) => {
+    if (e.target !== editFileInput) editFileInput.click();
+  });
+
+  function handleEditImageFile(file) {
+    readImageFile(file, (dataUrl) => {
+      editPendingImage = dataUrl;
+      $('#editImagePreview').src = dataUrl;
+      $('#editImagePreview').classList.add('show');
+    });
+  }
+
+  editFileInput.addEventListener('change', (e) => handleEditImageFile(e.target.files[0]));
+
+  editUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); editUploadArea.classList.add('drag-over'); });
+  editUploadArea.addEventListener('dragleave', () => editUploadArea.classList.remove('drag-over'));
+  editUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    editUploadArea.classList.remove('drag-over');
+    handleEditImageFile(e.dataTransfer.files[0]);
+  });
+
+  $('#editProductCancelBtn').addEventListener('click', closeEditModal);
+  editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
+
+  // Save edits
+  $('#editProductSaveBtn').addEventListener('click', () => {
+    if (!ensureWritable()) return;
+    const productId = $('#editProductId').value;
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    const newName = $('#editProductName').value.trim();
+    const newStock = parseInt($('#editProductStock').value) || 0;
+
+    if (!newName) return showToast('請輸入商品名稱', 'error');
+
+    product.name = newName;
+    product.stock = newStock;
+    if (editPendingImage !== null) {
+      product.imageDataUrl = editPendingImage;
+    }
+
+    // Update productName in related transactions
+    transactions.forEach(t => {
+      if (t.productId === productId) t.productName = newName;
+    });
+
+    persistAll();
+    closeEditModal();
+    showToast(`商品「${esc(newName)}」已更新！`, 'success');
+    renderInventory();
+  });
+
+  // Delete product
+  $('#editProductDeleteBtn').addEventListener('click', () => {
+    if (!ensureWritable()) return;
+    const productId = $('#editProductId').value;
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    if (!confirm(`確定要刪除「${product.name}」嗎？\n\n❗ 此操作無法復原，商品及相關交易紀錄都會被刪除。`)) {
+      return;
+    }
+
+    products = products.filter(p => p.id !== productId);
+    transactions = transactions.filter(t => t.productId !== productId);
+    persistAll();
+    closeEditModal();
+    showToast(`商品「${esc(product.name)}」已刪除`, 'info');
+    renderInventory();
+  });
+
+  // ══════════════════════════════════════
+  //  PAGE - DATA MANAGEMENT
+  // ══════════════════════════════════════
+  function renderDataPage() {
+    const dates = transactions.map(t => t.date).sort();
+    $('#dataSummary').innerHTML = `
+      <div class="stat-card blue"><div class="stat-label">儲存位置</div>
+        <div class="stat-value" style="font-size:1.1rem;">${SERVER_MODE ? '本機 data.json' : '瀏覽器 IndexedDB'}</div></div>
+      <div class="stat-card green"><div class="stat-label">商品數</div><div class="stat-value">${products.length}</div></div>
+      <div class="stat-card orange"><div class="stat-label">交易紀錄</div><div class="stat-value">${transactions.length}</div></div>
+      <div class="stat-card purple"><div class="stat-label">紀錄期間</div>
+        <div class="stat-value" style="font-size:1rem;">${dates.length ? formatDate(dates[0]) + ' – ' + formatDate(dates[dates.length - 1]) : '—'}</div></div>`;
+    $('#dataModeNote').textContent = SERVER_MODE
+      ? '目前由本機伺服器提供：每次儲存前，伺服器會自動把上一版 data.json 複製到 backups 資料夾。'
+      : '目前為網頁版：變更只保存在這台裝置的瀏覽器中，不會影響網站上的原始資料。';
+    $('#resetSnapshotBtn').style.display = SERVER_MODE ? 'none' : '';
+  }
+
+  $('#exportJsonBtn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({
+      version: '2.0', lastUpdated: new Date().toISOString(), settings, products, transactions
+    })], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.download = `CardTrader備份_${todayStr()}.json`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showToast('已匯出 JSON 備份', 'success');
+  });
+
+  $('#importJsonInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file || !ensureWritable()) return;
+    let data;
+    try {
+      data = JSON.parse(await file.text());
+    } catch {
+      return showToast('檔案不是有效的 JSON', 'error');
+    }
+    if (!Array.isArray(data.products) || !Array.isArray(data.transactions)) {
+      return showToast('格式不符：需要 products 與 transactions 兩個陣列', 'error');
+    }
+    if (!confirm(`將以匯入檔案取代目前資料：\n\n目前：${products.length} 項商品、${transactions.length} 筆交易\n匯入：${data.products.length} 項商品、${data.transactions.length} 筆交易\n\n確定要取代嗎？`)) return;
+    products = data.products;
+    transactions = data.transactions;
+    if (data.settings) settings = data.settings;
+    migrate();
+    await persistAll();
+    renderDataPage();
+    showToast('匯入完成', 'success');
+  });
+
+  $('#resetSnapshotBtn').addEventListener('click', async () => {
+    if (!confirm('將捨棄這台裝置上的所有變更，回到網站上的初始資料。確定嗎？')) return;
+    const snapshot = await loadSnapshot();
+    products = snapshot.products || [];
+    transactions = snapshot.transactions || [];
+    settings = snapshot.settings || null;
+    migrate();
+    await persistAll();
+    renderDataPage();
+    showToast('已重設為初始資料', 'info');
+  });
+
+  // ══════════════════════════════════════
+  //  HISTORY - MONTHLY CHART (inline SVG)
+  // ══════════════════════════════════════
+  function renderMonthlyChart(list) {
+    const months = {};
+    list.forEach(t => {
+      const d = new Date(t.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const m = months[key] || (months[key] = { income: 0, spend: 0 });
+      const money = txMoney(t);
+      if (t.type === 'sale') m.income += money.amount;
+      else m.spend += money.cost;
+      m.income += money.rebate;
+    });
+    const keys = Object.keys(months).sort().slice(-12);
+    const box = $('#monthlyChart');
+    if (keys.length === 0) { box.innerHTML = ''; return; }
+
+    const W = 760, H = 260, padL = 56, padB = 28, padT = 16;
+    const max = Math.max(...keys.map(k => Math.max(months[k].income, months[k].spend)), 1);
+    const slot = (W - padL) / keys.length;
+    const bw = Math.min(28, slot / 3);
+    const y = v => padT + (H - padT - padB) * (1 - v / max);
+    const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(max * f));
+
+    box.innerHTML = `
+      <div class="chart-title">📈 每月收支（${keys[0]} 至 ${keys[keys.length - 1]}）</div>
+      <div class="chart-legend">
+        <span><i style="background:var(--accent-green)"></i>銷售收入＋回饋</span>
+        <span><i style="background:var(--accent-orange)"></i>進貨成本（含手續費）＋雜支</span>
+        <span><b>±數字</b>＝當月淨額</span>
+      </div>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每月收支長條圖">
+        ${ticks.map(v => `
+          <line x1="${padL}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--border-glass)"/>
+          <text x="${padL - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--text-muted)">${formatCurrency(v)}</text>`).join('')}
+        ${keys.map((k, i) => {
+          const { income, spend } = months[k];
+          const cx = padL + slot * i + slot / 2;
+          const net = income - spend;
+          return `
+          <rect x="${cx - bw - 1}" y="${y(income)}" width="${bw}" height="${y(0) - y(income)}" rx="3" fill="var(--accent-green)"><title>${k} 收入 $${formatCurrency(income)}</title></rect>
+          <rect x="${cx + 1}" y="${y(spend)}" width="${bw}" height="${y(0) - y(spend)}" rx="3" fill="var(--accent-orange)"><title>${k} 支出 $${formatCurrency(spend)}</title></rect>
+          <text x="${cx}" y="${Math.min(y(income), y(spend)) - 4}" text-anchor="middle" font-size="10" font-weight="700"
+            fill="${net >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${net >= 0 ? '+' : '−'}${formatCurrency(Math.abs(net))}</text>
+          <text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--text-secondary)">${k.slice(2).replace('-', '/')}</text>`;
+        }).join('')}
+      </svg>`;
+  }
+
+  // ══════════════════════════════════════
+  //  PAGE - SETTINGS (payment methods)
+  // ══════════════════════════════════════
+  // 編輯中的草稿，按「儲存設定」才寫回 settings
+  let draftMethods = [];
+  let draftDefault = '';
+
+  function renderSettings() {
+    draftMethods = settings.paymentMethods.map(m => ({ ...m }));
+    draftDefault = getPaymentMethod(settings.defaultPaymentMethod).id;
+    renderMethodRows();
+  }
+
+  function renderMethodRows() {
+    $('#methodRows').innerHTML = draftMethods.map((m, i) => `
+      <tr>
+        <td><input type="radio" name="defaultMethod" value="${esc(m.id)}" ${m.id === draftDefault ? 'checked' : ''} aria-label="設為預設"></td>
+        <td><input type="text" data-i="${i}" data-k="name" value="${esc(m.name)}" placeholder="例：信用卡A"></td>
+        <td><input type="number" data-i="${i}" data-k="feeRate" value="${m.feeRate}" min="0" max="100" step="0.01"></td>
+        <td><input type="number" data-i="${i}" data-k="rebateRate" value="${m.rebateRate}" min="0" max="100" step="0.01"></td>
+        <td><button class="btn btn-sm" data-del="${i}" title="刪除" ${draftMethods.length === 1 ? 'disabled' : ''}>🗑</button></td>
+      </tr>`).join('');
+  }
+
+  $('#methodRows').addEventListener('input', (e) => {
+    const { i, k } = e.target.dataset;
+    if (i === undefined) return;
+    draftMethods[i][k] = e.target.value;
+  });
+  $('#methodRows').addEventListener('change', (e) => {
+    if (e.target.name === 'defaultMethod') draftDefault = e.target.value;
+  });
+  $('#methodRows').addEventListener('click', (e) => {
+    const i = e.target.dataset.del;
+    if (i === undefined) return;
+    const [removed] = draftMethods.splice(Number(i), 1);
+    if (removed.id === draftDefault) draftDefault = draftMethods[0].id;
+    renderMethodRows();
+  });
+
+  $('#addMethodBtn').addEventListener('click', () => {
+    draftMethods.push({ id: genId(), name: '', feeRate: 0, rebateRate: 0 });
+    renderMethodRows();
+  });
+
+  $('#saveSettingsBtn').addEventListener('click', async () => {
+    if (!ensureWritable()) return;
+    const names = new Set();
+    const cleaned = [];
+    for (const m of draftMethods) {
+      const name = String(m.name).trim();
+      const feeRate = Number(m.feeRate);
+      const rebateRate = Number(m.rebateRate);
+      if (!name) return showToast('付款方式名稱不可空白', 'error');
+      if (names.has(name)) return showToast(`付款方式「${esc(name)}」重複`, 'error');
+      if (!(feeRate >= 0 && feeRate <= 100) || !(rebateRate >= 0 && rebateRate <= 100)) {
+        return showToast(`「${esc(name)}」的費率需介於 0–100%`, 'error');
+      }
+      names.add(name);
+      cleaned.push({ id: m.id, name, feeRate, rebateRate });
+    }
+    settings = { ...settings, paymentMethods: cleaned, defaultPaymentMethod: draftDefault };
+    await persistAll();
+    renderSettings();
+    showToast('設定已儲存；既有交易維持記錄當下的費率', 'success');
+  });
+
+  // 依網址 #hash 開啟對應頁面（例如 index.html#history）
+  function openPageFromHash() {
+    const pageId = location.hash.slice(1);
+    switchPage($(`.nav-item[data-page="${pageId}"]`) ? pageId : 'inventory');
+  }
+  window.addEventListener('hashchange', openPageFromHash);
+  openPageFromHash();
+
+})();
+
+    </script>
+</body>
+
+</html>
