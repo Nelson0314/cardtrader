@@ -1810,9 +1810,7 @@ body::before {
       .filter(t => t.type === type)
       .reduce((s, t) => s + txMoney(t)[key], 0);
     const totalCostInvested = sum('purchase', 'cost');
-    const totalRebate = sum('purchase', 'rebate');
     const totalSalesRevenue = sum('sale', 'amount');
-    const totalExpenses = sum('expense', 'amount');
 
     $('#inventoryStats').innerHTML = `
       <div class="stat-card blue">
@@ -1827,17 +1825,9 @@ body::before {
         <div class="stat-label">總進貨成本（含手續費）</div>
         <div class="stat-value">$${formatCurrency(totalCostInvested)}</div>
       </div>
-      <div class="stat-card blue">
-        <div class="stat-label">總回饋</div>
-        <div class="stat-value text-green">$${formatCurrency(totalRebate)}</div>
-      </div>
       <div class="stat-card purple">
         <div class="stat-label">總銷售收入</div>
         <div class="stat-value">$${formatCurrency(totalSalesRevenue)}</div>
-      </div>
-      <div class="stat-card" style="border-top:3px solid var(--accent-red);">
-        <div class="stat-label">總雜支</div>
-        <div class="stat-value text-red">$${formatCurrency(totalExpenses)}</div>
       </div>
     `;
 
